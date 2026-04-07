@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuse Reset Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #1D9E75;
+  --green-light: #E1F5EE;
+  --green-dark: #0F6E56;
+  --amber: #BA7517;
+  --red: #D85A30;
+  --bg: #f9f9f7;
+  --surface: #ffffff;
+  --border: rgba(0,0,0,0.1);
+  --border-strong: rgba(0,0,0,0.18);
+  --text: #1a1a1a;
+  --text-secondary: #555;
+  --text-muted: #888;
+  --radius: 10px;
+  --radius-lg: 14px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0 0 80px;
+}
+
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.header-brand {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.wrap {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 40px 24px 0;
+}
+
+.hero {
+  margin-bottom: 40px;
+}
+
+.hero h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.hero p {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 480px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.row.single { grid-template-columns: 1fr; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+input, select, textarea {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text);
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
+  background: #fff;
+}
+
+textarea { resize: vertical; min-height: 96px; line-height: 1.5; }
+
+.checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  transition: all 0.12s;
+  user-select: none;
+}
+
+.checkbox-item:hover { border-color: var(--green); }
+.checkbox-item input[type=checkbox] { width: 14px; height: 14px; margin: 0; accent-color: var(--green); flex-shrink: 0; }
+.checkbox-item:has(input:checked) { border-color: var(--green); background: var(--green-light); color: var(--green-dark); }
+
+.mode-toggle, .timeline-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mode-btn, .tl-btn {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.mode-btn:hover, .tl-btn:hover { border-color: var(--green); color: var(--green-dark); }
+.mode-btn.active, .tl-btn.active { background: var(--green-light); border-color: var(--green); color: var(--green-dark); }
+
+.projection-card {
+  background: var(--bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px;
+  margin-top: 10px;
+  display: none;
+}
+.projection-card.visible { display: block; }
+
+.proj-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.proj-row:last-child { border-bottom: none; }
+.proj-label { color: var(--text-secondary); }
+.proj-val { font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px; }
+.proj-val.green { color: var(--green-dark); }
+.proj-val.amber { color: var(--amber); }
+.proj-val.red { color: var(--red); }
+
+.proj-pace-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  margin: 4px 0;
+  font-size: 13px;
+  border: 1px solid var(--border);
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+.field-hint.important {
+  color: var(--green-dark);
+  font-weight: 500;
+}
+
+.partner-divider {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 24px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'DM Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.partner-divider::before, .partner-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.disclaimer {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  margin-bottom: 16px;
+}
+
+.generate-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  border: none;
+  background: var(--green);
+  color: white;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.01em;
+}
+.generate-btn:hover { background: var(--green-dark); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(29,158,117,0.3); }
+.generate-btn:active { transform: translateY(0); }
+.generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.output-section {
+  margin-top: 32px;
+  display: none;
+}
+.output-section.visible { display: block; }
+
+.output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.output-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.output-actions { display: flex; gap: 8px; }
+
+.action-btn {
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  transition: all 0.12s;
+}
+.action-btn:hover { border-color: var(--green); color: var(--green-dark); }
+
+.output-body {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: pre-wrap;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.loading-state {
+  display: none;
+  align-items: center;
+  gap: 14px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-top: 24px;
+}
+.loading-state.visible { display: flex; }
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.error-box {
+  display: none;
+  font-size: 13px;
+  color: var(--red);
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid #F0997B;
+  background: #FAECE7;
+  margin-top: 12px;
+}
+.error-box.visible { display: block; }
+
+.hidden { display: none; }
+
+.fuse-footer {
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 60px;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 480px) {
+  .row { grid-template-columns: 1fr; }
+  .checkbox-grid { grid-template-columns: 1fr; }
+  .wrap { padding: 24px 16px 0; }
+  .card { padding: 18px; }
+  .hero h1 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-dot"></div>
+  <span class="header-brand">Fuse · Reset Planner</span>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Build your reset plan</h1>
+    <p>Answer a few questions and get a personalized GLP-1 fat loss plan — nutrition, training, and a roadmap built around your life.</p>
+  </div>
+
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-solo" onclick="setMode('solo')">Solo plan</button>
+    <button class="mode-btn" id="btn-couple" onclick="setMode('couple')">Couples — 2 plans</button>
+  </div>
+
+  <div id="person1-form">
+    <div id="couple-label1" class="hidden"><div class="partner-divider">Person 1</div></div>
+
+    <div class="card">
+      <div class="section-label">The basics</div>
+      <div class="row">
+        <div class="field"><label>First name</label><input type="text" id="p1-name" placeholder="e.g. Tim"></div>
+        <div class="field"><label>Age</label><input type="number" id="p1-age" placeholder="43" min="18" max="99"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Biological sex</label>
+          <select id="p1-sex"><option value="">Select</option><option>Male</option><option>Female</option></select>
+        </div>
+        <div class="field"><label>Current weight (lbs)</label><input type="number" id="p1-cw" placeholder="253" oninput="updateProjection('p1')"></div>
+      </div>
+      <div class="row single">
+        <div class="field"><label>Goal weight (lbs)</label><input type="number" id="p1-gw" placeholder="220" oninput="updateProjection('p1')"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Timeline</div>
+      <div class="timeline-toggle">
+        <button class="tl-btn active" id="p1-tl-event" onclick="setTimeline('p1','event')">I have a target date</button>
+        <button class="tl-btn" id="p1-tl-project" onclick="setTimeline('p1','project')">Project my timeline</button>
+      </div>
+      <div id="p1-event-section">
+        <div class="field">
+          <label>Target date</label>
+          <input type="date" id="p1-date" oninput="updateProjection('p1')">
+          <span class="field-hint">Event, trip, or deadline you're working toward</span>
+        </div>
+        <div class="projection-card" id="p1-event-card">
+          <div class="proj-row"><span class="proj-label">Weeks out</span><span class="proj-val" id="p1-weeks-out">—</span></div>
+          <div class="proj-row"><span class="proj-label">lbs to lose</span><span class="proj-val" id="p1-lbs-to-lose">—</span></div>
+          <div class="proj-row"><span class="proj-label">Required pace</span><span class="proj-val" id="p1-required-pace">—</span></div>
+          <div class="proj-row"><span class="proj-label">Verdict</span><span class="proj-val" id="p1-verdict">—</span></div>
+        </div>
+      </div>
+      <div id="p1-project-section" class="hidden">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;line-height:1.6">No deadline? Your plan will include three timeline projections so you can pick the pace that fits your life.</p>
+        <div class="projection-card visible" id="p1-project-card">
+          <div class="proj-row"><span class="proj-label">lbs to lose</span><span class="proj-val" id="p1-proj-lbs">—</span></div>
+          <div class="proj-pace-row"><span class="proj-label">Conservative (1 lb/wk)</span><span class="proj-val green" id="p1-cons-date">—</span></div>
+          <div class="proj-pace-row"><span class="proj-label">Moderate (1.5 lbs/wk)</span><span class="proj-val green" id="p1-mod-date">—</span></div>
+          <div class="proj-pace-row"><span class="proj-label">Aggressive (2 lbs/wk)</span><span class="proj-val green" id="p1-agg-date">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Medication</div>
+      <div class="row">
+        <div class="field"><label>GLP-1 medication</label>
+          <select id="p1-glp1">
+            <option value="">Select</option>
+            <option>Zepbound (tirzepatide)</option>
+            <option>Mounjaro (tirzepatide)</option>
+            <option>Ozempic (semaglutide)</option>
+            <option>Wegovy (semaglutide)</option>
+            <option>Rybelsus (oral semaglutide)</option>
+            <option>Other GLP-1</option>
+            <option>Not currently on a GLP-1</option>
+          </select>
+        </div>
+        <div class="field"><label>Current dose</label><input type="text" id="p1-dose" placeholder="e.g. 15mg weekly"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>How long on this medication?</label>
+          <select id="p1-glpdur">
+            <option value="">Select</option>
+            <option>Just starting (under 4 weeks)</option>
+            <option>1–3 months</option>
+            <option>3–6 months</option>
+            <option>6+ months</option>
+          </select>
+        </div>
+        <div class="field"><label>Metformin or diabetes meds?</label>
+          <select id="p1-metformin">
+            <option value="">Select</option>
+            <option>Yes — Metformin</option>
+            <option>Yes — other diabetes medication</option>
+            <option>Both Metformin + other</option>
+            <option>No</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Equipment available</div>
+      <div class="checkbox-grid" id="p1-equipment">
+        <label class="checkbox-item"><input type="checkbox" value="Tonal or cable machine"> Tonal / cable machine</label>
+        <label class="checkbox-item"><input type="checkbox" value="Barbell and rack"> Barbell + rack</label>
+        <label class="checkbox-item"><input type="checkbox" value="Dumbbells"> Dumbbells</label>
+        <label class="checkbox-item"><input type="checkbox" value="Kettlebells"> Kettlebells</label>
+        <label class="checkbox-item"><input type="checkbox" value="Walking pad or treadmill"> Walking pad / treadmill</label>
+        <label class="checkbox-item"><input type="checkbox" value="Resistance bands"> Resistance bands</label>
+        <label class="checkbox-item"><input type="checkbox" value="Full commercial gym access"> Full gym access</label>
+        <label class="checkbox-item"><input type="checkbox" value="Bodyweight only"> Bodyweight only</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Physical limitations</div>
+      <div class="checkbox-grid" id="p1-limits">
+        <label class="checkbox-item"><input type="checkbox" value="knee issues"> Knee issues</label>
+        <label class="checkbox-item"><input type="checkbox" value="hip issues"> Hip issues</label>
+        <label class="checkbox-item"><input type="checkbox" value="shoulder issues"> Shoulder issues</label>
+        <label class="checkbox-item"><input type="checkbox" value="lower back issues"> Lower back</label>
+        <label class="checkbox-item"><input type="checkbox" value="ankle issues"> Ankle issues</label>
+        <label class="checkbox-item"><input type="checkbox" value="none"> None</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Lifestyle</div>
+      <div class="row">
+        <div class="field"><label>Current activity level</label>
+          <select id="p1-activity">
+            <option value="">Select</option>
+            <option>Mostly sedentary</option>
+            <option>Light (walks, occasional workouts)</option>
+            <option>Moderate (2–3x/week)</option>
+            <option>Active (4+ days/week)</option>
+          </select>
+        </div>
+        <div class="field"><label>Cooking situation</label>
+          <select id="p1-cooking">
+            <option value="">Select</option>
+            <option>Cook with a partner most nights</option>
+            <option>Usually cook solo</option>
+            <option>Batch cook on weekends</option>
+            <option>Minimal cooking — need fast options</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Dietary approach</label>
+          <select id="p1-diet">
+            <option value="">Select</option>
+            <option>None / flexible</option>
+            <option>Paleo / no grains or dairy</option>
+            <option>No dairy</option>
+            <option>No gluten</option>
+            <option>Vegetarian</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field"><label>Eating window</label>
+          <select id="p1-if">
+            <option value="">Select</option>
+            <option>No fasting — eating throughout the day</option>
+            <option>16:8 (e.g. noon–8pm)</option>
+            <option>18:6 or longer</option>
+            <option>Intuitive — eat when hungry</option>
+          </select>
+        </div>
+      </div>
+      <div class="row single">
+        <div class="field">
+          <label>Your situation in your own words</label>
+          <textarea id="p1-notes" placeholder="Tell Claude what the dropdowns can't. e.g. I work swing shifts 3–11pm, I have a cruise in 8 weeks, I've plateaued for 3 weeks, I hate meal prepping, my knees flare up after leg day..."></textarea>
+          <span class="field-hint important">The more you put here, the more personalized your plan. This is the most important field on the form.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="person2-form" class="hidden">
+    <div class="partner-divider">Person 2</div>
+
+    <div class="card">
+      <div class="section-label">The basics</div>
+      <div class="row">
+        <div class="field"><label>First name</label><input type="text" id="p2-name" placeholder="e.g. Sarah"></div>
+        <div class="field"><label>Age</label><input type="number" id="p2-age" placeholder="43" min="18" max="99"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Biological sex</label>
+          <select id="p2-sex"><option value="">Select</option><option>Male</option><option>Female</option></select>
+        </div>
+        <div class="field"><label>Current weight (lbs)</label><input type="number" id="p2-cw" placeholder="236" oninput="updateProjection('p2')"></div>
+      </div>
+      <div class="row single">
+        <div class="field"><label>Goal weight (lbs)</label><input type="number" id="p2-gw" placeholder="200" oninput="updateProjection('p2')"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Timeline</div>
+      <div class="timeline-toggle">
+        <button class="tl-btn active" id="p2-tl-event" onclick="setTimeline('p2','event')">I have a target date</button>
+        <button class="tl-btn" id="p2-tl-project" onclick="setTimeline('p2','project')">Project my timeline</button>
+      </div>
+      <div id="p2-event-section">
+        <div class="field">
+          <label>Target date</label>
+          <input type="date" id="p2-date" oninput="updateProjection('p2')">
+          <span class="field-hint">Event, trip, or deadline you're working toward</span>
+        </div>
+        <div class="projection-card" id="p2-event-card">
+          <div class="proj-row"><span class="proj-label">Weeks out</span><span class="proj-val" id="p2-weeks-out">—</span></div>
+          <div class="proj-row"><span class="proj-label">lbs to lose</span><span class="proj-val" id="p2-lbs-to-lose">—</span></div>
+          <div class="proj-row"><span class="proj-label">Required pace</span><span class="proj-val" id="p2-required-pace">—</span></div>
+          <div class="proj-row"><span class="proj-label">Verdict</span><span class="proj-val" id="p2-verdict">—</span></div>
+        </div>
+      </div>
+      <div id="p2-project-section" class="hidden">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;line-height:1.6">No deadline? Your plan will include three timeline projections so you can pick the pace that fits your life.</p>
+        <div class="projection-card visible" id="p2-project-card">
+          <div class="proj-row"><span class="proj-label">lbs to lose</span><span class="proj-val" id="p2-proj-lbs">—</span></div>
+          <div class="proj-pace-row"><span class="proj-label">Conservative (1 lb/wk)</span><span class="proj-val green" id="p2-cons-date">—</span></div>
+          <div class="proj-pace-row"><span class="proj-label">Moderate (1.5 lbs/wk)</span><span class="proj-val green" id="p2-mod-date">—</span></div>
+          <div class="proj-pace-row"><span class="proj-label">Aggressive (2 lbs/wk)</span><span class="proj-val green" id="p2-agg-date">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Medication</div>
+      <div class="row">
+        <div class="field"><label>GLP-1 medication</label>
+          <select id="p2-glp1">
+            <option value="">Select</option>
+            <option>Zepbound (tirzepatide)</option>
+            <option>Mounjaro (tirzepatide)</option>
+            <option>Ozempic (semaglutide)</option>
+            <option>Wegovy (semaglutide)</option>
+            <option>Rybelsus (oral semaglutide)</option>
+            <option>Other GLP-1</option>
+            <option>Not currently on a GLP-1</option>
+          </select>
+        </div>
+        <div class="field"><label>Current dose</label><input type="text" id="p2-dose" placeholder="e.g. 2.5mg weekly"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>How long on this medication?</label>
+          <select id="p2-glpdur">
+            <option value="">Select</option>
+            <option>Just starting (under 4 weeks)</option>
+            <option>1–3 months</option>
+            <option>3–6 months</option>
+            <option>6+ months</option>
+          </select>
+        </div>
+        <div class="field"><label>Metformin or diabetes meds?</label>
+          <select id="p2-metformin">
+            <option value="">Select</option>
+            <option>Yes — Metformin</option>
+            <option>Yes — other diabetes medication</option>
+            <option>Both Metformin + other</option>
+            <option>No</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Equipment available</div>
+      <div class="checkbox-grid" id="p2-equipment">
+        <label class="checkbox-item"><input type="checkbox" value="Tonal or cable machine"> Tonal / cable machine</label>
+        <label class="checkbox-item"><input type="checkbox" value="Barbell and rack"> Barbell + rack</label>
+        <label class="checkbox-item"><input type="checkbox" value="Dumbbells"> Dumbbells</label>
+        <label class="checkbox-item"><input type="checkbox" value="Kettlebells"> Kettlebells</label>
+        <label class="checkbox-item"><input type="checkbox" value="Walking pad or treadmill"> Walking pad / treadmill</label>
+        <label class="checkbox-item"><input type="checkbox" value="Resistance bands"> Resistance bands</label>
+        <label class="checkbox-item"><input type="checkbox" value="Full commercial gym access"> Full gym access</label>
+        <label class="checkbox-item"><input type="checkbox" value="Bodyweight only"> Bodyweight only</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Physical limitations</div>
+      <div class="checkbox-grid" id="p2-limits">
+        <label class="checkbox-item"><input type="checkbox" value="knee issues"> Knee issues</label>
+        <label class="checkbox-item"><input type="checkbox" value="hip issues"> Hip issues</label>
+        <label class="checkbox-item"><input type="checkbox" value="shoulder issues"> Shoulder issues</label>
+        <label class="checkbox-item"><input type="checkbox" value="lower back issues"> Lower back</label>
+        <label class="checkbox-item"><input type="checkbox" value="ankle issues"> Ankle issues</label>
+        <label class="checkbox-item"><input type="checkbox" value="none"> None</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Lifestyle</div>
+      <div class="row">
+        <div class="field"><label>Current activity level</label>
+          <select id="p2-activity">
+            <option value="">Select</option>
+            <option>Mostly sedentary</option>
+            <option>Light (walks, occasional workouts)</option>
+            <option>Moderate (2–3x/week)</option>
+            <option>Active (4+ days/week)</option>
+          </select>
+        </div>
+        <div class="field"><label>Cooking situation</label>
+          <select id="p2-cooking">
+            <option value="">Select</option>
+            <option>Cook with a partner most nights</option>
+            <option>Usually cook solo</option>
+            <option>Batch cook on weekends</option>
+            <option>Minimal cooking — need fast options</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Dietary approach</label>
+          <select id="p2-diet">
+            <option value="">Select</option>
+            <option>None / flexible</option>
+            <option>Paleo / no grains or dairy</option>
+            <option>No dairy</option>
+            <option>No gluten</option>
+            <option>Vegetarian</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field"><label>Eating window</label>
+          <select id="p2-if">
+            <option value="">Select</option>
+            <option>No fasting — eating throughout the day</option>
+            <option>16:8 (e.g. noon–8pm)</option>
+            <option>18:6 or longer</option>
+            <option>Intuitive — eat when hungry</option>
+          </select>
+        </div>
+      </div>
+      <div class="row single">
+        <div class="field">
+          <label>Your situation in your own words</label>
+          <textarea id="p2-notes" placeholder="Tell Claude what the dropdowns can't. e.g. I have a wedding in 10 weeks, I've hit a plateau, I cook solo most nights, my knees flare up after leg day..."></textarea>
+          <span class="field-hint important">The more you put here, the more personalized your plan. This is the most important field on the form.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    This tool generates a personalized plan based on your inputs. It is not medical advice. If you are on Metformin or any diabetes medication, share this plan with your doctor before starting — especially in weeks 1–3.
+  </div>
+
+  <div class="error-box" id="error-box"></div>
+
+  <button class="generate-btn" id="gen-btn" onclick="generatePlan()">Generate my reset plan</button>
+
+  <div class="loading-state" id="loading-state">
+    <div class="spinner"></div>
+    <span class="loading-text" id="loading-text">Building your personalized plan...</span>
+  </div>
+
+  <div class="output-section" id="output-section">
+    <div class="output-header">
+      <span class="output-title" id="output-title">Your reset plan</span>
+      <div class="output-actions">
+        <button class="action-btn" onclick="copyPlan()">Copy</button>
+        <button class="action-btn" onclick="printPlan()">Print / Save PDF</button>
+      </div>
+    </div>
+    <div class="output-body" id="output-body"></div>
+  </div>
+
+  <div class="fuse-footer">Built by Fuse · TNT Labs</div>
+</div>
+
+<script>
+let mode = 'solo';
+let tlMode = { p1: 'event', p2: 'event' };
+
+const SYSTEM = `You are a GLP-1 fitness and nutrition coach. Build highly personalized fat loss plans for people on GLP-1 medications.
+
+Core methodology:
+- GLP-1 suppresses appetite. Biggest risk is eating too little and losing muscle. Always anchor to adequate protein: 0.8-1g per lb of goal body weight.
+- Paleo and whole-food frameworks work synergistically with GLP-1 for blood sugar management.
+- Metformin users: improved diet and exercise can lower blood sugar, medication dosages may need adjustment. Always flag this.
+- Muscle preservation requires resistance training minimum 3x/week. Adjust every workout for joint limitations listed.
+- Walking is the highest-leverage fat loss tool. Always include a daily walking target.
+- Batch cooking reduces friction. Match to their cooking situation.
+- Be realistic about timeline. If math is tight, say so and focus on what IS achievable.
+
+For each person output these 6 sections:
+1. YOUR NUMBERS — daily calorie target, protein target, deficit size, weekly projected loss
+2. DAILY MEAL TEMPLATE — 3-4 meals with protein per meal, matched to their dietary approach and eating window
+3. BATCH COOK GUIDE — 3-4 proteins and 3-4 vegetables to prep once and use all week
+4. WORKOUT SPLIT — 3-day weekly split A/B/C, each with 5-6 exercises, sets/reps, joint modifications as needed
+5. ROADMAP — week-by-week expectations. If no fixed deadline, show all 3 pace options (Conservative 1lb/wk, Moderate 1.5lbs/wk, Aggressive 2lbs/wk) with projected goal dates and what each demands
+6. RECOVERY NOTES — sleep, electrolytes, medication-specific flags
+
+Write in plain direct language. Use the person's name. Give specific numbers. Flag anything requiring a doctor.`;
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-solo').classList.toggle('active', m === 'solo');
+  document.getElementById('btn-couple').classList.toggle('active', m === 'couple');
+  document.getElementById('person2-form').classList.toggle('hidden', m === 'solo');
+  document.getElementById('couple-label1').classList.toggle('hidden', m === 'solo');
+}
+
+function setTimeline(p, t) {
+  tlMode[p] = t;
+  document.getElementById(p + '-tl-event').classList.toggle('active', t === 'event');
+  document.getElementById(p + '-tl-project').classList.toggle('active', t === 'project');
+  document.getElementById(p + '-event-section').classList.toggle('hidden', t !== 'event');
+  document.getElementById(p + '-project-section').classList.toggle('hidden', t !== 'project');
+  updateProjection(p);
+}
+
+function addWeeks(weeks) {
+  const d = new Date();
+  d.setDate(d.getDate() + Math.round(weeks * 7));
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function updateProjection(p) {
+  const cw = parseFloat(document.getElementById(p + '-cw').value);
+  const gw = parseFloat(document.getElementById(p + '-gw').value);
+
+  if (tlMode[p] === 'project') {
+    const diff = (cw && gw && cw > gw) ? cw - gw : null;
+    document.getElementById(p + '-proj-lbs').textContent = diff ? diff.toFixed(0) + ' lbs' : '—';
+    document.getElementById(p + '-cons-date').textContent = diff ? addWeeks(diff / 1) : '—';
+    document.getElementById(p + '-mod-date').textContent = diff ? addWeeks(diff / 1.5) : '—';
+    document.getElementById(p + '-agg-date').textContent = diff ? addWeeks(diff / 2) : '—';
+    return;
+  }
+
+  const dateVal = document.getElementById(p + '-date').value;
+  const card = document.getElementById(p + '-event-card');
+  if (!cw || !gw || !dateVal) { card.classList.remove('visible'); return; }
+
+  const target = new Date(dateVal);
+  const weeks = Math.round((target - new Date()) / (1000 * 60 * 60 * 24 * 7));
+  const diff = cw - gw;
+  if (weeks <= 0 || diff <= 0) { card.classList.remove('visible'); return; }
+
+  const pace = diff / weeks;
+  card.classList.add('visible');
+  document.getElementById(p + '-weeks-out').textContent = weeks + ' weeks';
+  document.getElementById(p + '-lbs-to-lose').textContent = diff.toFixed(0) + ' lbs';
+  document.getElementById(p + '-required-pace').textContent = pace.toFixed(1) + ' lbs/week';
+
+  const el = document.getElementById(p + '-verdict');
+  if (pace <= 1) { el.textContent = 'Very achievable'; el.className = 'proj-val green'; }
+  else if (pace <= 1.5) { el.textContent = 'Achievable'; el.className = 'proj-val green'; }
+  else if (pace <= 2) { el.textContent = 'Aggressive but doable'; el.className = 'proj-val amber'; }
+  else { el.textContent = 'Needs expectation reset'; el.className = 'proj-val red'; }
+}
+
+function getChecked(id) {
+  return Array.from(document.querySelectorAll('#' + id + ' input:checked')).map(b => b.value).join(', ') || 'None';
+}
+
+function val(id) { return document.getElementById(id).value || 'Not specified'; }
+
+function timelineBlock(p) {
+  const cw = parseFloat(val(p + '-cw'));
+  const gw = parseFloat(val(p + '-gw'));
+  const diff = (cw && gw) ? (cw - gw).toFixed(0) : '?';
+  if (tlMode[p] === 'project') {
+    return `Timeline: No fixed deadline — include all 3 pace roadmaps in section 5\nLbs to lose: ${diff}\nFor each pace show: projected goal date, required daily deficit, and what that pace demands lifestyle-wise.`;
+  }
+  const td = val(p + '-date');
+  const weeks = td !== 'Not specified' ? Math.round((new Date(td) - new Date()) / (1000 * 60 * 60 * 24 * 7)) : null;
+  const pace = (weeks && diff !== '?') ? (diff / weeks).toFixed(1) : '?';
+  return `Target date: ${td}${weeks ? ' (' + weeks + ' weeks out)' : ''}\nLbs to lose: ${diff} | Required pace: ${pace} lbs/week${parseFloat(pace) > 2 ? '\nNOTE: Pace is aggressive — be honest about realistic target and provide adjusted goal weight alongside full plan.' : ''}`;
+}
+
+function personBlock(p, label) {
+  return `${label ? label + '\n' : ''}Name: ${val(p + '-name')} | Age: ${val(p + '-age')} | Sex: ${val(p + '-sex')}
+Current weight: ${val(p + '-cw')} lbs | Goal: ${val(p + '-gw')} lbs
+${timelineBlock(p)}
+GLP-1: ${val(p + '-glp1')} | Dose: ${val(p + '-dose')} | Duration: ${val(p + '-glpdur')}
+Other meds: ${val(p + '-metformin')}
+Equipment: ${getChecked(p + '-equipment')}
+Limitations: ${getChecked(p + '-limits')}
+Activity: ${val(p + '-activity')} | Cooking: ${val(p + '-cooking')}
+Diet: ${val(p + '-diet')} | Eating window: ${val(p + '-if')}
+Situation: ${val(p + '-notes')}`;
+}
+
+async function generatePlan() {
+  const btn = document.getElementById('gen-btn');
+  const loading = document.getElementById('loading-state');
+  const loadingText = document.getElementById('loading-text');
+  const outputSection = document.getElementById('output-section');
+  const outputBody = document.getElementById('output-body');
+  const outputTitle = document.getElementById('output-title');
+  const errorBox = document.getElementById('error-box');
+
+  errorBox.classList.remove('visible');
+  btn.disabled = true;
+  loading.classList.add('visible');
+  outputSection.classList.remove('visible');
+
+  const msgs = ['Calculating your macro targets...', 'Building your workout split...', 'Mapping your roadmap...', 'Personalizing batch cook guide...', 'Almost done...'];
+  let idx = 0;
+  const ticker = setInterval(() => { loadingText.textContent = msgs[++idx % msgs.length]; }, 3000);
+
+  const instructions = `Build a complete personalized GLP-1 reset plan with all 6 sections as described.`;
+  let userMessage, titleText;
+
+  if (mode === 'couple') {
+    const b1 = personBlock('p1', '=== ' + val('p1-name') + ' ===');
+    const b2 = personBlock('p2', '=== ' + val('p2-name') + ' ===');
+    userMessage = `${instructions}\n\nGenerate a full separate plan for each person, labeled by name.\n\n${b1}\n\n${b2}`;
+    titleText = `${val('p1-name')} & ${val('p2-name')} — reset plans`;
+  } else {
+    userMessage = `${instructions}\n\n${personBlock('p1', null)}`;
+    titleText = `${val('p1-name')}'s reset plan`;
+  }
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: SYSTEM,
+        messages: [{ role: 'user', content: userMessage }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const result = data.content?.find(b => b.type === 'text')?.text || 'No output returned. Please try again.';
+
+    clearInterval(ticker);
+    loading.classList.remove('visible');
+    outputTitle.textContent = titleText;
+    outputBody.textContent = result;
+    outputSection.classList.add('visible');
+    outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    clearInterval(ticker);
+    loading.classList.remove('visible');
+    errorBox.textContent = 'Error: ' + err.message;
+    errorBox.classList.add('visible');
+  }
+
+  btn.disabled = false;
+}
+
+function copyPlan() {
+  const text = document.getElementById('output-body').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+function printPlan() {
+  window.print();
+}
+</script>
+
+</body>
+</html>
